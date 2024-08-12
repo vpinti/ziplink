@@ -3,14 +3,13 @@
 namespace App\Filament\Widgets;
 
 use App\Actions\GenerateQRCodeAction;
-use App\Filament\Pages\Actions\CopyToClipboardAction;
+use App\Filament\Pages\Actions\DownloadQrCodeAction;
 use App\Models\Url;
 use Filament\Forms\Get;
 use Filament\Tables\Actions\Action;
 use Filament\Support\Enums\IconSize;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Tables\Columns\ImageColumn;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Support\Colors\Color;
@@ -30,7 +29,7 @@ class UserLinks extends BaseWidget
             ->columns([
                 Split::make([
                     Tables\Columns\TextColumn::make('qr')
-                        ->default(fn(Url $record) => GenerateQRCodeAction::execute($record->original_url,))
+                        ->default(fn(Url $record) => GenerateQRCodeAction::execute($record->original_url))
                         ->grow(false)
                         ->extraAttributes(fn(): array => [
                             'class' => 'ring ring-blue-400'
@@ -43,22 +42,15 @@ class UserLinks extends BaseWidget
             ->actions([
                 CopyAction::make()->copyable(fn($record) => 'https://' . config('ziplink.short_url_domain') . '/' . $record->short_url)
                     ->hiddenLabel(true)
-                    ->icon('heroicon-o-square-2-stack')
+                    ->iconSize(IconSize::Large)
+                    ->extraAttributes([
+                        'title' => 'Copy Short Link',
+                    ], true)
+                    ->color(Color::hex("#fff")),
+                DownloadQrCodeAction::make('downloadQRCode')
+                    ->hiddenLabel(true)
                     ->iconSize(IconSize::Large)
                     ->color(Color::hex("#fff")),
-                Action::make('copy')
-                    ->hiddenLabel(true)
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->iconSize(IconSize::Large)
-                    ->color(Color::hex("#fff"))
-                    ->action(function ($record) {
-                        // Implementazione della copia del link
-                        dd('test');
-                        // dd(CopyAction::make()->copyable(fn($record) => $record->original_url));
-
-                        // $link = "https://zipplink.it/{$record->custom_url}";
-                        // return "navigator.clipboard.writeText('$link')";
-                    }),
                 Action::make('delete')
                     ->hiddenLabel(true)
                     ->icon('heroicon-o-trash')
@@ -102,15 +94,26 @@ class UserLinks extends BaseWidget
                         \Filament\Forms\Components\Placeholder::make('qr-code')
                             ->label(false)
                             ->content(function (Get $get): ?HtmlString {
-                                return empty($get('original_url')) ?
+                                return empty($get('original_url')) || !filter_var($get('original_url'), FILTER_VALIDATE_URL) ?
                                     null :
                                     GenerateQRCodeAction::execute(url: $get('original_url'), size: 256);
                             }),
                         \Filament\Forms\Components\TextInput::make('title')
                             ->label(false)
+                            ->rules(['required'])
+                            ->validationAttribute('title')
+                            ->validationMessages([
+                                'required' => ':attribute is required.',
+                            ])
                             ->placeholder('Short Link\'s Title'),
                         \Filament\Forms\Components\TextInput::make('original_url')
                             ->label(false)
+                            ->rules(['required', 'url:https'])
+                            ->validationAttribute('long URL')
+                            ->validationMessages([
+                                'required' => ':attribute is required.',
+                                'url' => 'The long URL field must be a valid URL. (https://example.com)',
+                            ])
                             ->live()
                             ->debounce(500)
                             ->placeholder('Enter your Loooong URL'),
