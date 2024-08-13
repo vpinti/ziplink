@@ -64,6 +64,7 @@ class UserLinks extends BaseWidget
                         try {
                             $record->delete();
                             $notification->success();
+                            $this->dispatch('tableRefreshed');
                         } catch (\Exception $e) {
                             $title = 'Error';
                             $body = 'An error occurred while deleting the link.';
@@ -127,6 +128,7 @@ class UserLinks extends BaseWidget
                     ->modalSubmitActionLabel('Create')
                     ->action(function (array $data): void {
                         Url::create($data);
+                        $this->dispatch('tableRefreshed');
                     })
             ]);
     }

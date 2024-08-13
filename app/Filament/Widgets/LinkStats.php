@@ -6,11 +6,13 @@ use App\Models\Click;
 use App\Models\Url;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Livewire\Attributes\On;
 
+#[On('tableRefreshed')]
 class LinkStats extends BaseWidget
 {
     protected static ?string $pollingInterval = null;
-    
+
     protected function getStats(): array
     {
         $userId = auth()->id();
